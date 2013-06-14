@@ -42,7 +42,7 @@ module Kitchen
       def fixup_files(container_id, container_path)
         etc_sysconfig_network = File.join(container_path, "etc", "sysconfig", "network")
         if File.exists?(etc_sysconfig_network)
-          run_command("sed -i s/HOSTNAME=.+/HOSTNAME=#{state[:container_id]}/g #{etc_sysconfig_network}")
+          run_command("sed -i s/HOSTNAME=.+/HOSTNAME=#{container_id}/g #{etc_sysconfig_network}")
         end
         ifcfg_eth0 = File.join(container_path, "etc", "sysconfig", "network-scripts", "ifcfg-eth0")
         if File.exists?(etc_sysconfig_network)
