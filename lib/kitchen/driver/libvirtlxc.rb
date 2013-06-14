@@ -17,6 +17,7 @@ module Kitchen
 
       def create(state)
         state[:container_id] = SecureRandom.uuid
+        info("Creating LXC container #{state[:container_id]}")
         new_container = File.join(config[:container_path], state[:container_id])
         state[:container_path] = new_container
         run_command("cp -r #{File.join(config[:container_path], config[:base_container])} #{new_container}")
@@ -26,7 +27,7 @@ module Kitchen
         run_command("chmod 0644 #{new_container}/root/.ssh/authorized_keys")
         fixup_files(state[:container_id], new_container)
         run_command("virt-install --connect lxc:/// --name #{state[:container_id]} --ram #{config[:customize][:memory]} --vcpu #{config[:customize][:vcpu]} --filesystem #{new_container}/,/ --noautoconsole")
-        run_command("virsh --connect lxc:/// start #{state[:container_id]}")
+        run_command("virsh --connect lxc:/// start #{state[:container_id]}", :returns => [0,1])
         state[:hostname] = wait_for_lease(state[:container_id])
         wait_for_sshd(state[:hostname])
       end
@@ -42,16 +43,23 @@ module Kitchen
       def fixup_files(container_id, container_path)
         etc_sysconfig_network = File.join(container_path, "etc", "sysconfig", "network")
         if File.exists?(etc_sysconfig_network)
-          run_command("sed -i s/HOSTNAME=.+/HOSTNAME=#{container_id}/g #{etc_sysconfig_network}")
+          info("manipulating sysconfig")
+          run_command("sed -i 's/HOSTNAME=.*/HOSTNAME=#{container_id}/g' #{etc_sysconfig_network}")
         end
         ifcfg_eth0 = File.join(container_path, "etc", "sysconfig", "network-scripts", "ifcfg-eth0")
         if File.exists?(etc_sysconfig_network)
-          run_command("sed -i s/BOOTPROTO=.+/BOOTPROTO=dhcp/g #{ifcfg_eth0}")
-          run_command("sed -i s/IPADDR=.+//g #{ifcfg_eth0}")
+          run_command("sed -i 's/BOOTPROTO=.*/BOOTPROTO=dhcp/g' #{ifcfg_eth0}")
+          run_command("sed -i 's/IPADDR=.+//g' #{ifcfg_eth0}")
+        end
+        etc_sudoers = File.join(container_path, "etc", "sudoers") 
+        if File.exists?(etc_sudoers)
+          run_command("sed -i 's/Defaults.*requiretty/# Defaults requiretty/g' #{etc_sudoers}")
+          run_command("sed -i 's/Defaults.*visiblepw/# Defaults !visiblepw/g' #{etc_sudoers}")
         end
       end
 
       def wait_for_lease(container_id)
+        info("Determining mac address...")
         mac_address = nil
         ip_address = nil
         File.open("/etc/libvirt/lxc/#{container_id}.xml", "r") do |xml|
@@ -62,6 +70,7 @@ module Kitchen
             end
           end
         end
+        info("Mac addresss: #{mac_address}")
 
         tries = 30
         while ip_address == nil && tries > 0
@@ -79,6 +88,8 @@ module Kitchen
         end
 
         raise ActionFailed, "Cannot determine IP Address of '#{container_id}'" unless ip_address
+
+        info("IP Address: #{ip_address}")
 
         return ip_address
       end
