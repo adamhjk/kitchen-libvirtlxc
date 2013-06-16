@@ -60,17 +60,9 @@ module Kitchen
 
       def wait_for_lease(container_id)
         info("Determining mac address...")
-        mac_address = nil
-        ip_address = nil
-        File.open("/etc/libvirt/lxc/#{container_id}.xml", "r") do |xml|
-          xml.each_line do |line|
-            if line =~ /mac address='(.+)'/
-              mac_address = $1
-              break
-            end
-          end
-        end
+        mac_address = run_command("grep 'mac address' /etc/libvirt/lxc/#{container_id}.xml | cut -d \"'\" -f 2").chomp!
         info("Mac addresss: #{mac_address}")
+        ip_address = nil
 
         tries = 30
         while ip_address == nil && tries > 0
