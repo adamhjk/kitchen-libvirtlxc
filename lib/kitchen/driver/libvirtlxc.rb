@@ -23,7 +23,7 @@ module Kitchen
         run_command("cp -r #{File.join(config[:container_path], config[:base_container])} #{new_container}")
         run_command("mkdir -p #{new_container}/root/.ssh")
         run_command("chmod 0700 #{new_container}/root/.ssh")
-        run_command("cat #{config[:ssh_public_key]} >> #{new_container}/root/.ssh/authorized_keys")
+        run_command("cp #{config[:ssh_public_key]} #{new_container}/root/.ssh/authorized_keys")
         run_command("chmod 0644 #{new_container}/root/.ssh/authorized_keys")
         fixup_files(state[:container_id], new_container)
         run_command("virt-install --connect lxc:/// --name #{state[:container_id]} --ram #{config[:customize][:memory]} --vcpu #{config[:customize][:vcpu]} --filesystem #{new_container}/,/ --noautoconsole")
