@@ -1,7 +1,7 @@
 # coding: utf-8
 Gem::Specification.new do |spec|
   spec.name          = "kitchen-libvirtlxc"
-  spec.version       = "0.3.0"
+  spec.version       = "0.4.0"
   spec.authors       = ["Adam Jacob"]
   spec.email         = ["adam@opscode.com"]
   spec.description   = %q{Kitchen driver for libvirt LXC containers}
